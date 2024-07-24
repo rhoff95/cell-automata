@@ -240,7 +240,7 @@ Transform:
   m_GameObject: {fileID: 596565253}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.2700908, y: 0.40184242, z: 0.03392602}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -261,30 +261,10 @@ MonoBehaviour:
   gridSize: {x: 10, y: 10}
   startPosition: {x: -4, y: -4}
   scale: {x: 8, y: 8}
-  walls:
-  - values: 01010101010101010101
-  - values: 00
-  - values: 00
-  - values: 01000101010101010101
-  - values: 
-  - values: 
-  - values: 
-  - values: 
-  - values: 
-  - values: 
-  water:
-  - values: 
-  - values: 
-  - values: 
-  - values: 
-  - values: 
-  - values: 
-  - values: 
-  - values: 
-  - values: 
-  - values: 
-  wallPrefab: {fileID: 1564517587303263103, guid: 556a0df9c9a163d439ac74fa27caf7e7, type: 3}
-  waterPrefab: {fileID: 0}
+  tilePrefab: {fileID: 2150254240860586366, guid: 145f94a08d50e984ca743a8a50f7e4c8, type: 3}
+  wallColor: {r: 0, g: 0, b: 0, a: 1}
+  waterColor: {r: 0, g: 1, b: 1, a: 1}
+  emptyColor: {r: 0, g: 0, b: 0, a: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
