@@ -61,6 +61,7 @@ public class GameController : MonoBehaviour
 
     [Range(0f, 1f)] public float maxCompression = 0.02f;
     [Range(0f, 1f)] public float minWater = 0.0001f;
+    public bool simulate = false;
 
     private List<List<SpriteRenderer>> _gridSpriteRenderers;
     private List<List<bool>> _gridWalls;
@@ -106,12 +107,15 @@ public class GameController : MonoBehaviour
                 }
             }
         }
-
-        // UpdateWater();
     }
 
     private void Update()
     {
+        if (simulate)
+        {
+            UpdateWater();
+        }
+
         #region Update Water Sprites
 
         for (var r = 0; r < _gridWater.Count; r++)
@@ -138,17 +142,17 @@ public class GameController : MonoBehaviour
 
     public void UpdateWater()
     {
-        var new_mass = new List<List<float>>();
+        var newMass = new List<List<float>>();
 
         #region Initialize Next Grid
 
         for (var y = 0; y < _gridWater.Count; y++)
         {
-            new_mass.Add(new List<float>());
+            newMass.Add(new List<float>());
 
             for (var x = 0; x < _gridWater[y].Count; x++)
             {
-                new_mass[y].Add(_gridWater[y][x]);
+                newMass[y].Add(_gridWater[y][x]);
             }
         }
 
@@ -165,6 +169,9 @@ public class GameController : MonoBehaviour
 
         // Do the same thing as in step 1., but for the cell above the current one.
 
+        var maxSpeed = 1f;
+        var minFlow = 0.01f;
+
         for (var y = 1; y < _gridWater.Count; y++)
         {
             for (var x = 1; x < _gridWater[y].Count; x++)
@@ -176,60 +183,110 @@ public class GameController : MonoBehaviour
                     continue;
                 }
 
-                var flow = 0f;
-                var minFlow = 1f;
-                var maxSpeed = 1f;
-                var remaining_mass = _gridWater[y][x];
+                // Custom push-only flow
+                var remainingMass = _gridWater[y][x];
 
-                if (remaining_mass <= 0f)
+                if (remainingMass <= 0f)
                 {
                     continue;
                 }
 
-                if (!_gridWalls[y -1][x])
+                // The block below this one
+                if (!_gridWalls[y - 1][x])
                 {
-                    flow = get_stable_state_b(remaining_mass + _gridWater[y - 1][x]) - _gridWater[y - 1][x];
+                    var flow = get_stable_state_b(remainingMass + _gridWater[y - 1][x]) - _gridWater[y - 1][x];
 
                     if (flow > minFlow)
                     {
                         flow *= 0.5f;
                     }
 
-                    flow = Mathf.Clamp(flow, 0, Mathf.Min(maxSpeed, remaining_mass));
+                    flow = Mathf.Clamp(flow, 0, Mathf.Min(maxSpeed, remainingMass));
 
-                    new_mass[y][x] -= flow;
-                    new_mass[y - 1][x] += flow;
-
-                    remaining_mass -= flow;
+                    newMass[y][x] -= flow;
+                    newMass[y - 1][x] += flow;
+                    remainingMass -= flow;
                 }
 
-
-                if (remaining_mass <= 0f)
+                if (remainingMass <= 0f)
                 {
                     continue;
                 }
+
+                // Left
+                if (!_gridWalls[y][x - 1])
+                {
+                    //Equalize the amount of water in this block and it's neighbour
+                    var flow = (_gridWater[y][x] - _gridWater[y][x - 1]) / 4;
+                    if (flow > minFlow)
+                    {
+                        flow *= 0.5f;
+                    }
+
+                    flow = Mathf.Clamp(flow, 0f, remainingMass);
+
+                    newMass[y][x] -= flow;
+                    newMass[y][x - 1] += flow;
+                    remainingMass -= flow;
+                }
+
+                if (remainingMass <= 0f)
+                {
+                    continue;
+                }
+
+                // Right
+                if (!_gridWalls[y][x + 1])
+                {
+                    //Equalize the amount of water in this block and it's neighbour
+                    var flow = (_gridWater[y][x] - _gridWater[y][x + 1]) / 4;
+                    if (flow > minFlow)
+                    {
+                        flow *= 0.5f;
+                    }
+
+                    flow = Mathf.Clamp(flow, 0f, remainingMass);
+
+                    newMass[y][x] -= flow;
+                    newMass[y][x + 1] += flow;
+                    remainingMass -= flow;
+                }
+
+                // Up. Only compressed water flows upwards.
+                if (!_gridWalls[y + 1][x])
+                {
+                    var flow = remainingMass - get_stable_state_b(remainingMass + _gridWater[y + 1][x]);
+                    if (flow > minFlow)
+                    {
+                        flow *= 0.5f;
+                    }
+
+                    flow = Mathf.Clamp(flow, 0f, Mathf.Min(maxSpeed, remainingMass));
+
+                    newMass[y][x] -= flow;
+                    newMass[y + 1][x] += flow;
+                    remainingMass -= flow;
+                }
             }
         }
-        
-        _gridWater = new_mass;
+
+        _gridWater = newMass;
     }
 
-
-    //Returns the amount of water that should be in the bottom cell.
+    // Returns the amount of water that should be in the bottom cell.
     private float get_stable_state_b(float totalMass)
     {
         if (totalMass <= 1)
         {
             return 1;
         }
-        else if (totalMass < 2 * maxWater + maxCompression)
+
+        if (totalMass < 2 * maxWater + maxCompression)
         {
             return (maxWater * maxWater + totalMass * maxCompression) / (maxWater + maxCompression);
         }
-        else
-        {
-            return (totalMass + maxCompression) / 2;
-        }
+
+        return (totalMass + maxCompression) / 2;
     }
 
     public void OnDrawGizmos()
